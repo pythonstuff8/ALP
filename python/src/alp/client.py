@@ -44,6 +44,7 @@ class ALPClient:
         self.trust_store = trust_store or TrustStore()
         self.default_timeout_s = default_timeout_s
         self.transport = transport
+        self._expected_output_schemas: dict[str, dict[str, Any]] = {}
 
     def validate_task(self, task: TaskEnvelope | dict[str, Any]) -> None:
         payload = task.model_dump(mode="json", exclude_none=True) if isinstance(task, TaskEnvelope) else task
@@ -78,6 +79,7 @@ class ALPClient:
             self.private_key,
         )
         validate_task_envelope(signed_task)
+        self._expected_output_schemas[task.task_id] = task.expected_output_schema
 
         policy = retry or RetryPolicy()
 
@@ -130,6 +132,7 @@ class ALPClient:
         *,
         timeout_s: float = 60.0,
         poll_interval_s: float = 2.0,
+        expected_output_schema: dict[str, Any] | None = None,
     ) -> ResultContract:
         import asyncio
         import time
@@ -152,6 +155,9 @@ class ALPClient:
                 from .crypto import verify_protocol_object
 
                 verify_protocol_object(payload, public_key)
+                expected_schema = expected_output_schema or self._expected_output_schemas.get(task_id)
+                if payload["status"] == "success" and expected_schema:
+                    validate_output_against_schema(payload["output"], expected_schema)
                 return ResultContract.model_validate(payload)
             if response.status_code == 202:
                 await asyncio.sleep(poll_interval_s)

@@ -26,6 +26,7 @@ const DEFAULT_RETRY_POLICY: RetryPolicy = {
 
 export class ALPClient {
   readonly trustStore: TrustStore;
+  private readonly expectedOutputSchemas = new Map<string, Record<string, unknown>>();
 
   constructor(
     private readonly cfg: {
@@ -70,6 +71,7 @@ export class ALPClient {
       this.cfg.privateKey
     );
     validateTaskEnvelope(signedTask);
+    this.expectedOutputSchemas.set(task.task_id, structuredClone(task.expected_output_schema));
 
     const operation = async (): Promise<TaskReceipt | ResultContract<T>> => {
       const controller = new AbortController();
@@ -123,7 +125,7 @@ export class ALPClient {
   async wait<T = unknown>(
     peer: PeerConfig,
     taskId: string,
-    opts?: { timeoutMs?: number; pollIntervalMs?: number }
+    opts?: { timeoutMs?: number; pollIntervalMs?: number; expectedOutputSchema?: Record<string, unknown> }
   ): Promise<ResultContract<T>> {
     const timeoutAt = Date.now() + (opts?.timeoutMs ?? 60000);
     const path = `/alp/v1/tasks/${taskId}`;
@@ -135,6 +137,10 @@ export class ALPClient {
         validateResultContract(payload);
         const publicKey = this.trustStore.getPublicKey(payload.issuer, payload.auth.key_id);
         verifyProtocolObject(payload as unknown as Record<string, unknown>, publicKey);
+        const expectedSchema = opts?.expectedOutputSchema ?? this.expectedOutputSchemas.get(taskId);
+        if (payload.status === "success" && expectedSchema) {
+          validateOutputAgainstSchema(payload.output, expectedSchema);
+        }
         return payload;
       }
       if (response.status === 202 || response.status === 404) {

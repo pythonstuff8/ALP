@@ -11,3 +11,4 @@ coverage/
 .DS_Store
 demo-data/
 typescript/demo-data/
+.env

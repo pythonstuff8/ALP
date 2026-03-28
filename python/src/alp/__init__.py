@@ -8,7 +8,7 @@ from .errors import (
     ALPValidationError,
 )
 from .server import ALPServer, TaskExecutor
-from .store import SQLiteTaskStore
+from .store import PostgresTaskStore, SQLiteTaskStore, TaskStore
 from .trust import TrustStore
 from .types import (
     AuthBlock,
@@ -38,6 +38,7 @@ __all__ = [
     "CostTracking",
     "ExecutionTrace",
     "PeerConfig",
+    "PostgresTaskStore",
     "ResponseMode",
     "ResultContract",
     "ResultError",
@@ -47,7 +48,7 @@ __all__ = [
     "TaskEnvelope",
     "TaskExecutor",
     "TaskReceipt",
+    "TaskStore",
     "TraceStep",
     "TrustStore",
 ]
-

@@ -4,6 +4,7 @@ Version: 0.1.0
 Summary: ALP v1 Python SDK and FastAPI server
 Requires-Python: >=3.12
 Description-Content-Type: text/markdown
+Requires-Dist: asyncpg>=0.30.0
 Requires-Dist: cryptography>=42.0.0
 Requires-Dist: fastapi>=0.111.0
 Requires-Dist: httpx>=0.27.0
@@ -14,17 +15,33 @@ Provides-Extra: dev
 Requires-Dist: pytest>=8.2.0; extra == "dev"
 Requires-Dist: pytest-asyncio>=0.23.0; extra == "dev"
 
-# alp-python
+# alp python 🐍
 
 Python reference implementation for ALP v1.
 
-## Includes
+## Included here
 
-- Pydantic protocol models
-- JSON Schema validation
-- Deterministic canonical JSON signing
-- Ed25519 signing and verification
-- Async HTTP client
-- FastAPI receiver app
-- SQLite-backed task store for local demo use
+| Part | Purpose |
+| --- | --- |
+| Protocol models | Pydantic objects for tasks, receipts, and results |
+| Validation | JSON Schema checks plus ALP output schema subset rules |
+| Signing | Deterministic canonical JSON plus Ed25519 signing and verification |
+| Sender client | Async submit and wait helpers |
+| Receiver server | FastAPI app with sync and callback handling |
+| Demo store | SQLite backed task state for local runs |
+
+## Main files
+
+1. [`src/alp/client.py`](src/alp/client.py)
+2. [`src/alp/server.py`](src/alp/server.py)
+3. [`src/alp/store.py`](src/alp/store.py)
+4. [`examples/research_agent.py`](examples/research_agent.py)
+
+## Quick commands
+
+```bash
+python3 -m pip install -e '.[dev]'
+python3 -m pytest tests
+python3 examples/research_agent.py
+```
 

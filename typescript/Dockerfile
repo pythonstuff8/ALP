@@ -2,10 +2,10 @@ FROM node:20-slim
 
 WORKDIR /app
 COPY schemas ./schemas
+COPY sql ./sql
 COPY typescript ./typescript
 
 WORKDIR /app/typescript
-RUN npm install
+RUN npm ci && npm run build
 
-CMD ["npm", "run", "start:agent-b"]
-
+CMD ["node", "dist/examples/scoring-agent.js"]

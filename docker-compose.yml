@@ -1,38 +1,85 @@
-version: "3.9"
-
 services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
   agent-b:
     build:
       context: .
       dockerfile: typescript/Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+      - .env
     environment:
       PORT: "8080"
+      ALP_ENV: ${ALP_ENV}
+      ALP_EXECUTOR_MODE: ${ALP_EXECUTOR_MODE}
       ALP_AGENT_ID: "scoring-agent-b"
       ALP_KEY_ID: "agent-b-key"
-      ALP_PRIVATE_KEY: "Ic_J31AJyKqUwb58vqVKr5sHsyvlzh5gUq_oFcn151Y"
+      ALP_PRIVATE_KEY: ${AGENT_B_PRIVATE_KEY}
       ALP_TRUST_ISSUER: "research-agent-a"
-      ALP_TRUST_PUBLIC_KEY: "QiW6d7ewMiCwfJpTebEasOZ8XdDC5664y-FDbVCh1wQ"
-      ALP_STORE_PATH: "/data/agent-b-store.json"
-    volumes:
-      - ./demo-data:/data
+      ALP_TRUST_PUBLIC_KEY: ${AGENT_A_PUBLIC_KEY}
+      ALP_DATABASE_URL: ${ALP_DATABASE_URL}
+      ALP_PUBLIC_BASE_URL: ${AGENT_B_PUBLIC_BASE_URL}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      ANTHROPIC_MODEL_ID: ${ANTHROPIC_MODEL_ID}
     ports:
       - "8080:8080"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8080/readyz').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
 
   agent-a:
     build:
       context: .
       dockerfile: python/Dockerfile
     depends_on:
-      - agent-b
+      agent-b:
+        condition: service_healthy
+    env_file:
+      - .env
     environment:
       PORT: "8000"
+      ALP_ENV: ${ALP_ENV}
+      ALP_EXECUTOR_MODE: ${ALP_EXECUTOR_MODE}
       ALP_AGENT_ID: "research-agent-a"
       ALP_KEY_ID: "agent-a-key"
-      ALP_PRIVATE_KEY: "Y8JhlL_nD98k1DuGRt5tJPy5cZ96EOK2U5m6FNO9D_M"
+      ALP_PRIVATE_KEY: ${AGENT_A_PRIVATE_KEY}
       ALP_PEER_AGENT_ID: "scoring-agent-b"
       ALP_PEER_BASE_URL: "http://agent-b:8080"
-      ALP_PEER_PUBLIC_KEY: "PEZsH-5otmmf_brSp2tQKPVOsSNxk7hu-G6KEuZC8-U"
+      ALP_PEER_PUBLIC_KEY: ${AGENT_B_PUBLIC_KEY}
       CALLBACK_PUBLIC_URL: "http://agent-a:8000/callbacks/result"
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      OPENAI_MODEL_ID: ${OPENAI_MODEL_ID}
     ports:
       - "8000:8000"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import sys,urllib.request; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/readyz').getcode()==200 else 1)",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 20
 
+volumes:
+  postgres-data:
