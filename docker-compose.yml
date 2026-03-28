@@ -1,0 +1,38 @@
+version: "3.9"
+
+services:
+  agent-b:
+    build:
+      context: .
+      dockerfile: typescript/Dockerfile
+    environment:
+      PORT: "8080"
+      ALP_AGENT_ID: "scoring-agent-b"
+      ALP_KEY_ID: "agent-b-key"
+      ALP_PRIVATE_KEY: "Ic_J31AJyKqUwb58vqVKr5sHsyvlzh5gUq_oFcn151Y"
+      ALP_TRUST_ISSUER: "research-agent-a"
+      ALP_TRUST_PUBLIC_KEY: "QiW6d7ewMiCwfJpTebEasOZ8XdDC5664y-FDbVCh1wQ"
+      ALP_STORE_PATH: "/data/agent-b-store.json"
+    volumes:
+      - ./demo-data:/data
+    ports:
+      - "8080:8080"
+
+  agent-a:
+    build:
+      context: .
+      dockerfile: python/Dockerfile
+    depends_on:
+      - agent-b
+    environment:
+      PORT: "8000"
+      ALP_AGENT_ID: "research-agent-a"
+      ALP_KEY_ID: "agent-a-key"
+      ALP_PRIVATE_KEY: "Y8JhlL_nD98k1DuGRt5tJPy5cZ96EOK2U5m6FNO9D_M"
+      ALP_PEER_AGENT_ID: "scoring-agent-b"
+      ALP_PEER_BASE_URL: "http://agent-b:8080"
+      ALP_PEER_PUBLIC_KEY: "PEZsH-5otmmf_brSp2tQKPVOsSNxk7hu-G6KEuZC8-U"
+      CALLBACK_PUBLIC_URL: "http://agent-a:8000/callbacks/result"
+    ports:
+      - "8000:8000"
+

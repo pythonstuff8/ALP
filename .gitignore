@@ -1,0 +1,13 @@
+.venv/
+__pycache__/
+.pytest_cache/
+.mypy_cache/
+dist/
+build/
+*.pyc
+node_modules/
+coverage/
+*.log
+.DS_Store
+demo-data/
+typescript/demo-data/

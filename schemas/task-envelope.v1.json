@@ -1,0 +1,230 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://alp.dev/schemas/task-envelope.v1.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "protocol_version",
+    "task_id",
+    "task_type",
+    "issuer",
+    "recipient",
+    "created_at",
+    "objective",
+    "inputs",
+    "constraints",
+    "expected_output_schema",
+    "response_mode",
+    "auth"
+  ],
+  "properties": {
+    "protocol_version": {
+      "const": "alp.v1"
+    },
+    "task_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]{16,64}$"
+    },
+    "task_type": {
+      "type": "string",
+      "pattern": "^[a-zA-Z0-9_.:-]{3,128}$"
+    },
+    "issuer": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._:-]{2,127}$"
+    },
+    "recipient": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._:-]{2,127}$"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "objective": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4000
+    },
+    "inputs": {
+      "type": "object",
+      "additionalProperties": true,
+      "maxProperties": 100
+    },
+    "constraints": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "deadline_at",
+        "max_runtime_ms",
+        "max_cost_usd",
+        "min_confidence",
+        "quality_tier"
+      ],
+      "properties": {
+        "deadline_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "max_runtime_ms": {
+          "type": "integer",
+          "minimum": 100,
+          "maximum": 3600000
+        },
+        "max_cost_usd": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1000
+        },
+        "min_confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "quality_tier": {
+          "type": "string",
+          "enum": [
+            "draft",
+            "standard",
+            "high"
+          ]
+        }
+      }
+    },
+    "expected_output_schema": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_dialect",
+        "schema"
+      ],
+      "properties": {
+        "schema_dialect": {
+          "const": "alp.output-schema.v1"
+        },
+        "schema": {
+          "type": "object",
+          "minProperties": 1
+        }
+      }
+    },
+    "response_mode": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mode"
+      ],
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": [
+            "sync",
+            "callback"
+          ]
+        },
+        "sync_timeout_ms": {
+          "type": "integer",
+          "minimum": 100,
+          "maximum": 300000
+        },
+        "callback": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "url",
+            "timeout_ms"
+          ],
+          "properties": {
+            "url": {
+              "type": "string",
+              "format": "uri"
+            },
+            "timeout_ms": {
+              "type": "integer",
+              "minimum": 100,
+              "maximum": 30000
+            }
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "mode": {
+                "const": "sync"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "sync_timeout_ms"
+            ],
+            "not": {
+              "required": [
+                "callback"
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "mode": {
+                "const": "callback"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "callback"
+            ],
+            "not": {
+              "required": [
+                "sync_timeout_ms"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "auth": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "alg",
+        "key_id",
+        "issued_at",
+        "expires_at",
+        "nonce",
+        "signature"
+      ],
+      "properties": {
+        "alg": {
+          "const": "Ed25519"
+        },
+        "key_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9._:-]{3,128}$"
+        },
+        "issued_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "expires_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "nonce": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{16,64}$"
+        },
+        "signature": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{64,512}$"
+        }
+      }
+    }
+  }
+}
+
